@@ -1,11 +1,4 @@
-import {
-  BigDecimal,
-  Address,
-  BigInt,
-  Bytes,
-  dataSource,
-  ethereum
-} from '@graphprotocol/graph-ts'
+import { BigDecimal, Address, BigInt, Bytes, dataSource, ethereum } from '@graphprotocol/graph-ts'
 import {
   Pool,
   User,
@@ -13,7 +6,7 @@ import {
   PoolShare,
   TokenPrice,
   Transaction,
-  Balancer
+  Balancer,
 } from '../types/schema'
 import { BTokenBytes } from '../types/templates/Pool/BTokenBytes'
 import { BToken } from '../types/templates/Pool/BToken'
@@ -24,36 +17,46 @@ export let ZERO_BD = BigDecimal.fromString('0')
 
 let network = dataSource.network()
 
-export let WETH: string = (network == 'mainnet')
-  ? '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
-  : '0xd0a1e359811322d97991e03f863a0c30c2cf029c'
+export let WETH: string =
+  network == 'mainnet'
+    ? '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+    : '0xd0a1e359811322d97991e03f863a0c30c2cf029c'
 
-export let USD: string = (network == 'mainnet')
-  ? '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' // USDC
-  : '0x2f375e94fc336cdec2dc0ccb5277fe59cbf1cae5' // USDC
+export let USD: string =
+  network == 'mainnet'
+    ? '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' // USDC
+    : '0x2f375e94fc336cdec2dc0ccb5277fe59cbf1cae5' // USDC
 
-export let DAI: string = (network == 'mainnet')
+export let DAI: string =
+  network == 'mainnet'
     ? '0x6b175474e89094c44da98b954eedeac495271d0f'
     : '0x1528f3fcc26d13f7079325fb78d9442607781c8c'
 
-export let CRP_FACTORY: string = (network == 'mainnet')
-  ? '0xed52D8E202401645eDAD1c0AA21e872498ce47D0'
-  : '0x53265f0e014995363AE54DAd7059c018BaDbcD74'
+export let CRP_FACTORY: string =
+  network == 'mainnet'
+    ? '0xed52D8E202401645eDAD1c0AA21e872498ce47D0'
+    : '0x53265f0e014995363AE54DAd7059c018BaDbcD74'
 
 export function hexToDecimal(hexString: String, decimals: i32): BigDecimal {
   let bytes = Bytes.fromHexString(hexString).reverse() as Bytes
   let bi = BigInt.fromUnsignedBytes(bytes)
-  let scale = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
+  let scale = BigInt.fromI32(10)
+    .pow(decimals as u8)
+    .toBigDecimal()
   return bi.divDecimal(scale)
 }
 
 export function bigIntToDecimal(amount: BigInt, decimals: i32): BigDecimal {
-  let scale = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
+  let scale = BigInt.fromI32(10)
+    .pow(decimals as u8)
+    .toBigDecimal()
   return amount.toBigDecimal().div(scale)
 }
 
 export function tokenToDecimal(amount: BigDecimal, decimals: i32): BigDecimal {
-  let scale = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
+  let scale = BigInt.fromI32(10)
+    .pow(decimals as u8)
+    .toBigDecimal()
   return amount.div(scale)
 }
 
@@ -159,7 +162,10 @@ export function updatePoolLiquidity(id: string): void {
     if (wethTokenPrice !== null) {
       let poolTokenId = id.concat('-').concat(WETH)
       let poolToken = PoolToken.load(poolTokenId)
-      poolLiquidity = wethTokenPrice.price.times(poolToken.balance).div(poolToken.denormWeight).times(pool.totalWeight)
+      poolLiquidity = wethTokenPrice.price
+        .times(poolToken.balance)
+        .div(poolToken.denormWeight)
+        .times(pool.totalWeight)
       hasPrice = true
     }
   } else if (tokensList.includes(Address.fromString(DAI))) {
@@ -167,7 +173,10 @@ export function updatePoolLiquidity(id: string): void {
     if (daiTokenPrice !== null) {
       let poolTokenId = id.concat('-').concat(DAI)
       let poolToken = PoolToken.load(poolTokenId)
-      poolLiquidity = daiTokenPrice.price.times(poolToken.balance).div(poolToken.denormWeight).times(pool.totalWeight)
+      poolLiquidity = daiTokenPrice.price
+        .times(poolToken.balance)
+        .div(poolToken.denormWeight)
+        .times(pool.totalWeight)
       hasPrice = true
     }
   }
@@ -189,15 +198,16 @@ export function updatePoolLiquidity(id: string): void {
 
       if (
         (tokenPrice.poolTokenId == poolTokenId || poolLiquidity.gt(tokenPrice.poolLiquidity)) &&
-        (
-          (tokenPriceId != WETH.toString() && tokenPriceId != DAI.toString()) ||
-          (pool.tokensCount.equals(BigInt.fromI32(2)) && hasUsdPrice)
-        )
+        ((tokenPriceId != WETH.toString() && tokenPriceId != DAI.toString()) ||
+          (pool.tokensCount.equals(BigInt.fromI32(2)) && hasUsdPrice))
       ) {
         tokenPrice.price = ZERO_BD
 
         if (poolToken.balance.gt(ZERO_BD)) {
-          tokenPrice.price = poolLiquidity.div(pool.totalWeight).times(poolToken.denormWeight).div(poolToken.balance)
+          tokenPrice.price = poolLiquidity
+            .div(pool.totalWeight)
+            .times(poolToken.denormWeight)
+            .div(poolToken.balance)
         }
 
         tokenPrice.symbol = poolToken.symbol
@@ -223,7 +233,10 @@ export function updatePoolLiquidity(id: string): void {
       let poolToken = PoolToken.load(poolTokenId)
       if (poolToken.denormWeight.gt(denormWeight)) {
         denormWeight = poolToken.denormWeight
-        liquidity = tokenPrice.price.times(poolToken.balance).div(poolToken.denormWeight).times(pool.totalWeight)
+        liquidity = tokenPrice.price
+          .times(poolToken.balance)
+          .div(poolToken.denormWeight)
+          .times(pool.totalWeight)
       }
     }
   }
@@ -282,7 +295,7 @@ export function isCrp(address: Address): boolean {
 
 export function getCrpController(crp: ConfigurableRightsPool): string | null {
   let controller = crp.try_getController()
-  if (controller.reverted) return null;
+  if (controller.reverted) return null
   return controller.value.toHexString()
 }
 
