@@ -19,6 +19,7 @@ import {
   saveTransaction,
   ZERO_BD,
   decrPoolCount,
+  savePoolShareAndSnapshot,
 } from './helpers'
 
 /************************************
@@ -353,34 +354,34 @@ export function handleTransfer(event: Transfer): void {
 
   if (isMint) {
     if (poolShareTo == null) {
-      createPoolShareEntity(poolShareToId, poolId, event.params.dst.toHex())
+      createPoolShareEntity(poolShareToId, poolId, event.params.dst.toHex(), event)
       poolShareTo = PoolShare.load(poolShareToId)
     }
     poolShareTo.balance += tokenToDecimal(event.params.amt.toBigDecimal(), 18)
-    poolShareTo.save()
+    savePoolShareAndSnapshot(poolShareTo, event)
     pool.totalShares += tokenToDecimal(event.params.amt.toBigDecimal(), 18)
   } else if (isBurn) {
     if (poolShareFrom == null) {
-      createPoolShareEntity(poolShareFromId, poolId, event.params.src.toHex())
+      createPoolShareEntity(poolShareFromId, poolId, event.params.src.toHex(), event)
       poolShareFrom = PoolShare.load(poolShareFromId)
     }
     poolShareFrom.balance -= tokenToDecimal(event.params.amt.toBigDecimal(), 18)
-    poolShareFrom.save()
+    savePoolShareAndSnapshot(poolShareFrom, event)
     pool.totalShares -= tokenToDecimal(event.params.amt.toBigDecimal(), 18)
   } else {
     if (poolShareTo == null) {
-      createPoolShareEntity(poolShareToId, poolId, event.params.dst.toHex())
+      createPoolShareEntity(poolShareToId, poolId, event.params.dst.toHex(), event)
       poolShareTo = PoolShare.load(poolShareToId)
     }
     poolShareTo.balance += tokenToDecimal(event.params.amt.toBigDecimal(), 18)
-    poolShareTo.save()
+    savePoolShareAndSnapshot(poolShareTo, event)
 
     if (poolShareFrom == null) {
-      createPoolShareEntity(poolShareFromId, poolId, event.params.src.toHex())
+      createPoolShareEntity(poolShareFromId, poolId, event.params.src.toHex(), event)
       poolShareFrom = PoolShare.load(poolShareFromId)
     }
     poolShareFrom.balance -= tokenToDecimal(event.params.amt.toBigDecimal(), 18)
-    poolShareFrom.save()
+    savePoolShareAndSnapshot(poolShareFrom, event)
   }
 
   if (

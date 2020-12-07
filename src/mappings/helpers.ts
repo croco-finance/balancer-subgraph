@@ -1,4 +1,12 @@
-import { BigDecimal, Address, BigInt, Bytes, dataSource, ethereum } from '@graphprotocol/graph-ts'
+import {
+  BigDecimal,
+  Address,
+  BigInt,
+  Bytes,
+  dataSource,
+  ethereum,
+  log,
+} from '@graphprotocol/graph-ts'
 import {
   Pool,
   User,
@@ -7,6 +15,8 @@ import {
   TokenPrice,
   Transaction,
   Balancer,
+  PoolShareSnapshot,
+  PoolTokenSnapshot,
 } from '../types/schema'
 import { BTokenBytes } from '../types/templates/Pool/BTokenBytes'
 import { BToken } from '../types/templates/Pool/BToken'
@@ -60,7 +70,12 @@ export function tokenToDecimal(amount: BigDecimal, decimals: i32): BigDecimal {
   return amount.div(scale)
 }
 
-export function createPoolShareEntity(id: string, pool: string, user: string): void {
+export function createPoolShareEntity(
+  id: string,
+  pool: string,
+  user: string,
+  event: ethereum.Event,
+): void {
   let poolShare = new PoolShare(id)
 
   createUserEntity(user)
@@ -68,7 +83,7 @@ export function createPoolShareEntity(id: string, pool: string, user: string): v
   poolShare.userAddress = user
   poolShare.poolId = pool
   poolShare.balance = ZERO_BD
-  poolShare.save()
+  savePoolShareAndSnapshot(poolShare, event)
 }
 
 export function createPoolTokenEntity(id: string, pool: string, address: string): void {
@@ -328,4 +343,54 @@ export function getCrpRights(crp: ConfigurableRightsPool): string[] {
   if (rights.value.value4) rightsArr.push('canWhitelistLPs')
   if (rights.value.value5) rightsArr.push('canChangeCap')
   return rightsArr
+}
+
+export function savePoolShareAndSnapshot(poolShare: PoolShare | null, event: ethereum.Event): void {
+  poolShare.save()
+
+  let pool = Pool.load(poolShare.poolId)
+  if (pool === null) {
+    log.error('Null pool, pool id: '.concat(poolShare.poolId), [])
+    return
+  }
+  if (pool.tokensList === null) {
+    log.error('Null tokensList, pool id: '.concat(pool.id), [])
+    return
+  }
+  let tokensList = pool.tokensList
+  let timestamp = event.block.timestamp
+  let tokenSnapshots: string[] = []
+  for (let i = 0; i < tokensList.length; i++) {
+    let tokenId = pool.id.concat('-').concat(tokensList[i].toHexString())
+    let token = PoolToken.load(tokenId)
+    if (token === null) {
+      log.error('Null token, token id: '.concat(tokenId), [])
+      return
+    }
+    let tokenSnapId = token.id.concat('-').concat(token.balance.toString())
+    let tokenSnap = new PoolTokenSnapshot(tokenSnapId)
+    tokenSnap.balance = token.balance
+    tokenSnap.token = token.id
+    tokenSnap.save()
+    tokenSnapshots.push(tokenSnap.id)
+  }
+
+  let id = poolShare.id
+    .concat('-')
+    .concat(event.transaction.hash.toHexString())
+    .concat('-')
+    .concat(event.logIndex.toString())
+  let snap = new PoolShareSnapshot(id)
+  snap.userAddress = poolShare.userAddress
+  snap.balance = poolShare.balance
+  snap.tokenSnapshots = tokenSnapshots
+  snap.totalShares = pool.totalShares
+  snap.liquidity = pool.liquidity
+  snap.txHash = event.transaction.hash
+  snap.block = event.block.number
+  snap.timestamp = timestamp
+  snap.gasUsed = event.transaction.gasUsed
+  snap.gasPrice = event.transaction.gasPrice
+
+  snap.save()
 }

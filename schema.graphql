@@ -61,6 +61,27 @@ type PoolShare @entity {
     balance: BigDecimal!
 }
 
+type PoolTokenSnapshot @entity {
+    id: ID!
+    balance: BigDecimal!
+    token: PoolToken!
+}
+
+type PoolShareSnapshot @entity {
+    id: ID!
+    userAddress: User!
+    balance: BigDecimal!
+    tokenSnapshots: [PoolTokenSnapshot!] # Pool token IDs are copy of the original token id + timestamp
+    totalShares: BigDecimal!                            # Total pool token shares
+    liquidity: BigDecimal!                              # Pool liquidity value in USD
+    # Replace the following with reference to tx entity once the Transaction entity is not messed up
+    txHash: Bytes!
+    block: BigInt!
+    timestamp: BigInt!
+    gasUsed: BigInt!
+    gasPrice: BigInt!
+}
+
 type User @entity {
     id: ID!
     sharesOwned: [PoolShare!]  @derivedFrom(field: "userAddress")
