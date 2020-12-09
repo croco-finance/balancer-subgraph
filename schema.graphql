@@ -69,6 +69,7 @@ type PoolTokenSnapshot @entity {
 
 type PoolShareSnapshot @entity {
     id: ID!
+    poolShare: PoolShare!
     userAddress: User!
     balance: BigDecimal!
     tokenSnapshots: [PoolTokenSnapshot!] # Pool token IDs are copy of the original token id + timestamp
