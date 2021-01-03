@@ -378,7 +378,8 @@ export function savePoolShareAndSnapshot(poolShare: PoolShare | null, event: eth
   let id = event.transaction.hash.toHexString().concat('-').concat(event.logIndex.toString())
   let snap = new PoolShareSnapshot(id)
   snap.poolShare = poolShare.id
-  snap.userAddress = poolShare.userAddress
+  snap.user = poolShare.userAddress
+  snap.pool = poolShare.poolId
   snap.balance = poolShare.balance
   snap.tokenSnapshots = tokenSnapshots
   snap.totalShares = pool.totalShares
