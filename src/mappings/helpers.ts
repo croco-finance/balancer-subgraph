@@ -353,6 +353,16 @@ export function savePoolShareAndSnapshot(poolShare: PoolShare | null, event: eth
     log.error('Null pool, pool id: '.concat(poolShare.poolId), [])
     return
   }
+  if (Address.fromString(poolShare.poolId).equals(Address.fromString(poolShare.userAddress))) {
+    log.info(
+      'Pool address equal to user id - SKIPPING snapshot. Pool address: '
+        .concat(pool.id)
+        .concat(', user address: ')
+        .concat(poolShare.userAddress),
+      [],
+    )
+    return
+  }
   if (pool.tokensList === null) {
     log.error('Null tokensList, pool id: '.concat(pool.id), [])
     return
